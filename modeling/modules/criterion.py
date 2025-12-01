@@ -361,7 +361,6 @@ class SetCriterion(nn.Module):
                 self.importance_sample_ratio,
             ).type(src_masks.dtype)
             # get gt labels
-
                 
             print("target_masks")
             print(target_masks.shape)
@@ -384,8 +383,7 @@ class SetCriterion(nn.Module):
         print("point_coords")
         print(point_coords.shape)
         print(point_coords)
-        sys.exit()
-        
+        sys.exit()       
 
         point_logits = point_sample(
             src_masks,
