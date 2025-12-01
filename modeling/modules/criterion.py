@@ -362,29 +362,11 @@ class SetCriterion(nn.Module):
             ).type(src_masks.dtype)
             # get gt labels
 
-                
-            print("target_masks")
-            print(target_masks.shape)
-            print(target_masks)
-            print()
-            print("point_coords")
-            print(point_coords.shape)
-            print(point_coords)
-
             point_labels = point_sample(
                 target_masks,
                 point_coords,
                 align_corners=False,
             ).squeeze(1)
-
-        print("src_masks")
-        print(src_masks.shape)
-        print(src_masks)
-        print()
-        print("point_coords")
-        print(point_coords.shape)
-        print(point_coords)
-        sys.exit()
 
         point_logits = point_sample(
             src_masks,
