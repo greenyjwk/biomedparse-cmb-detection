@@ -385,6 +385,7 @@ class SetCriterion(nn.Module):
         print(point_coords.shape)
         print(point_coords)
         sys.exit()
+        
 
         point_logits = point_sample(
             src_masks,
