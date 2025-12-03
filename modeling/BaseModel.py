@@ -1,25 +1,10 @@
-print("BaseModel")
 import os
-
-print("import check 1")
 import logging
-
-print("import check 2")
 import torch
-
-print("import check 3")
 import torch.nn as nn
-
-print("import check 4")
 from utilities.model import align_and_update_state_dicts
-
-print("import check 5")
 from utilities.distributed import init_distributed
-
-print("import check 6")
 from utilities.arguments import load_opt_from_config_files
-
-print("import check 7")
 import huggingface_hub
 
 logger = logging.getLogger(__name__)

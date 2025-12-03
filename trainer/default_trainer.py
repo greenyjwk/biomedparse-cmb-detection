@@ -694,7 +694,7 @@ class DefaultTrainer(UtilsTrainer, DistributedTrainer):
             for batch_idx, batch in enumerate(self.train_dataloaders):
                 '''
                 Code for input visualization
-                '''               
+                '''
                 tensorboard_log_batch(batch[0]['image'], batch_idx * (epoch+1))
                 if self.train_params['current_epoch_idx'] == self.train_params['start_epoch_idx']:
                     if batch_idx < self.train_params['start_batch_idx']: # skip the first few batches for resuming

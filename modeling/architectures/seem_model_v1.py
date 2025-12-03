@@ -6,7 +6,7 @@
 
 import random
 from typing import Tuple
-
+import sys
 import numpy as np
 import torch
 from torch import nn
@@ -16,6 +16,7 @@ from kornia.contrib import distance_transform
 from detectron2.structures import Boxes, ImageList, Instances, BitMasks
 from detectron2.utils.memory import retry_if_cuda_oom
 from detectron2.data import MetadataCatalog
+from modeling.modules.loss_distance import Loss_Distance
 
 from .build import register_model
 
@@ -211,6 +212,7 @@ class GeneralizedSEEM(nn.Module):
 
         grd_weight = {'text': dec_cfg['GROUNDING']['TEXT_WEIGHT'], 'class': dec_cfg['GROUNDING']['CLASS_WEIGHT']}
         # generate critenrion for loss function.
+        print("=== Initialize SetCriterion v1 ===")
         criterion = SetCriterion(
             sem_seg_head.num_classes,
             matcher=matcher,
@@ -327,6 +329,13 @@ class GeneralizedSEEM(nn.Module):
 
         
     def forward_seg(self, batched_inputs):
+        print()
+        print()
+        print("============ batched_inputs START=============")
+        print("batched_inputs", batched_inputs)
+        print("============ batched_inputs END=============")
+        print()
+        print()
         images = [x["image"].to(self.device) for x in batched_inputs]
         images = [(x - self.pixel_mean) / self.pixel_std for x in images]
         images = ImageList.from_tensors(images, self.size_divisibility)
@@ -379,6 +388,24 @@ class GeneralizedSEEM(nn.Module):
         else:
             losses = self.criterion.forward_vlp(outputs, targets, extra)
 
+        print()
+        print()
+        print("============outputs['pred_masks'] START=============")
+        if batched_inputs[0]["grounding_info"][0]["sentences"][0]["sent"] == 'brain microbleeds in Brain MRI':
+            print("batched_inputs[0]['sent'] == 'brain microbleeds in Brain MRI")
+            distance_loss_func = Loss_Distance(batched_inputs)
+            distance_loss = distance_loss_func.forward(outputs['pred_masks'])
+            print(distance_loss)
+            # sys.exit()
+        # print(outputs['pred_masks'])
+        # print(torch.unique(torch.sigmoid(outputs['pred_masks'])))
+        # print(len(torch.unique(torch.sigmoid(outputs['pred_masks']))))
+        # print(torch.sigmoid(outputs['pred_masks']))
+        # print(outputs['pred_masks'].shape)
+        # print("============outputs['pred_masks'] END=============")
+        # print()
+        # print()
+        
         del outputs
         return losses
 

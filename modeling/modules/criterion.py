@@ -47,7 +47,17 @@ def dice_loss(
                  classification label for each element in inputs
                 (0 for the negative class and 1 for the positive class).
     """
+    # print("================= DICE LOSS ================")
+    # print(inputs)
+    # print(inputs.shape)
+    # # print(torch.unique(inputs))
+    # print()
+    
     inputs = inputs.sigmoid()
+
+    # print(targets)
+    # print(targets.shape)
+    # print(torch.unique(targets))
     inputs = inputs.flatten(1)
     numerator = 2 * (inputs * targets).sum(-1)
     denominator = inputs.sum(-1) + targets.sum(-1)
@@ -289,7 +299,7 @@ class SetCriterion(nn.Module):
         if layer_id >= self.top_x_layers['caption']:
             return {"loss_caption_0": 0}
         matched_tokens = [m[0] for m in indices]
-        t_emb_class = torch.cat([extra['class_embeddings'][targets[bs]['labels'][m[1]]] for bs, m in enumerate(indices)])    
+        t_emb_class = torch.cat([extra['class_embeddings'][targets[bs]['labels'][m[1]]] for bs, m in enumerate(indices)])
         t_hash_class = torch.cat([torch.tensor(targets[bs]['labels_hash'])[m[1]] for bs, m in enumerate(indices)])
         
         # pred_captions denotes all unmatched object queries.
@@ -350,7 +360,7 @@ class SetCriterion(nn.Module):
         # N x 1 x H x W
         src_masks = src_masks[:, None]
         target_masks = target_masks[:, None]
-        
+
         with torch.no_grad():
             # sample point_coords
             point_coords = get_uncertain_point_coords_with_randomness(
@@ -361,29 +371,28 @@ class SetCriterion(nn.Module):
                 self.importance_sample_ratio,
             ).type(src_masks.dtype)
             # get gt labels
-                
-            print("target_masks")
-            print(target_masks.shape)
-            print(target_masks)
-            print()
-            print("point_coords")
-            print(point_coords.shape)
-            print(point_coords)
 
+            # print("target_masks")
+            # print(target_masks.shape)
+            # print(torch.unique(target_masks))
+            # print(target_masks)
+            # print()
+            # print("point_coords")
+            # print(point_coords.shape)
+            # print(point_coords)
             point_labels = point_sample(
                 target_masks,
                 point_coords,
                 align_corners=False,
             ).squeeze(1)
 
-        print("src_masks")
-        print(src_masks.shape)
-        print(src_masks)
-        print()
-        print("point_coords")
-        print(point_coords.shape)
-        print(point_coords)
-        sys.exit()       
+        # print()
+        # print()
+        # print("src_masks")
+        # print(src_masks.shape)
+        # print(torch.unique(src_masks))
+        # print(src_masks)
+        
 
         point_logits = point_sample(
             src_masks,
@@ -391,11 +400,21 @@ class SetCriterion(nn.Module):
             align_corners=False,
         ).squeeze(1)
 
+        # print()
+        # print("point_logits.shape", point_logits.shape)
+        # print("point_logits", point_logits)
+        # print()
+        # print("point_labels.shape", point_labels.shape)
+        # print("point_labels", point_labels)
+        # sys.exit()
+
+
+        
         losses = {
             "loss_mask_bce_0": sigmoid_ce_loss_jit(point_logits, point_labels, num_masks),
             "loss_mask_dice_0": dice_loss_jit(point_logits, point_labels, num_masks),
         }
-
+        # sys.exit()
         del src_masks
         del target_masks
         return losses

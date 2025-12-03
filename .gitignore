@@ -124,3 +124,5 @@ output
 
 .amlignore*
 model_weights
+
+wandb_run_url*

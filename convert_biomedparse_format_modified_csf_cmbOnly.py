@@ -98,7 +98,8 @@ MODALITY = "MRI"
 SITE = "Brain"
 
 # OUTPUT_PATH = "/media/Datacenter_storage/Ji/valdo_dataset/biomedparse_valdo_all_sequence"
-OUTPUT_PATH = "/media/Datacenter_storage/Ji/BiomedParse/biomedparse_datasets/valdo_t2s_resampling"
+# OUTPUT_PATH = "/media/Datacenter_storage/Ji/BiomedParse/biomedparse_datasets/valdo_t2s_resampling"
+OUTPUT_PATH = "/media/Datacenter_storage/Ji/BiomedParse/biomedparse_datasets/loss_func_dev"
 
 def ensure_dir(p: Path):
     p.mkdir(parents=True, exist_ok=True)
@@ -174,5 +175,5 @@ def main(root_path: str):
 
 if __name__ == "__main__":
     # root_path = "/media/Datacenter_storage/PublicDatasets/cerebral_microbleeds_VALDO/bias_field_correction_resampled_win_normalization_1021_min_max_t2s_yolo_resampling_GAN"
-    root_path = "/media/Datacenter_storage/PublicDatasets/cerebral_microbleeds_VALDO/bias_field_correction_resampled_win_normalization_1021_min_max_t2s_yolo_resampling"
+    root_path = "/media/Datacenter_storage/PublicDatasets/cerebral_microbleeds_VALDO/loss_func_dev"
     main(root_path)

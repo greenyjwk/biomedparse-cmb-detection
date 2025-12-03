@@ -205,6 +205,9 @@ class GeneralizedSEEM(nn.Module):
 
         grd_weight = {'text': dec_cfg['GROUNDING']['TEXT_WEIGHT'], 'class': dec_cfg['GROUNDING']['CLASS_WEIGHT']}
         # generate critenrion for loss function.
+        print("=== Initialize SetCriterion v0 ===")
+        import sys
+        sys.exit()
         criterion = SetCriterion(
             sem_seg_head.num_classes,
             matcher=matcher,
