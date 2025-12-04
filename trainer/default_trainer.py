@@ -451,13 +451,12 @@ from torch.utils.tensorboard import SummaryWriter
 
 logger = logging.getLogger(__name__)
 cur_time = datetime.now().strftime("%Y%m%d-%H%M%S")
-dataset_name = "biomed_valdo_t2s_resampling_train"
+dataset_name = "biomed_valdo_t2s_resampling_distance_loss_train"
 os.makedirs(f"runs/vis_{dataset_name}_{cur_time}", exist_ok=True)
 writer = SummaryWriter(log_dir=f"runs/vis_{dataset_name}_{cur_time}")
 
 
 class DefaultTrainer(UtilsTrainer, DistributedTrainer):
-
     def __init__(self, opt):
         """
         Set up the task the model is being trained for.
@@ -589,7 +588,6 @@ class DefaultTrainer(UtilsTrainer, DistributedTrainer):
                                             self.grad_acc_batches,
                                             batch_index,
                                             is_distributed=(self.opt['world_size'] > 1))
-
                 # So the loss_info should be the loss for one batch that has only one image.
                 self.train_loss.update_iter(loss_info)
                 total_batch_sample += sample_size_info['num_samples']

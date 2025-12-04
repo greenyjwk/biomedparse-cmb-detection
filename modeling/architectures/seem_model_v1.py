@@ -132,7 +132,6 @@ class GeneralizedSEEM(nn.Module):
     def from_config(cls, cfg):
         enc_cfg = cfg['MODEL']['ENCODER']
         dec_cfg = cfg['MODEL']['DECODER']
-
         # Loss parameters:
         deep_supervision = dec_cfg['DEEP_SUPERVISION']
         no_object_weight = dec_cfg['NO_OBJECT_WEIGHT']
@@ -190,6 +189,7 @@ class GeneralizedSEEM(nn.Module):
             losses['openimage'] += ["groundings"]
 
         weight_dict = {}
+        weight_dict["loss_mask_distance_0"] = 1.0  # or the same weight value used for other seg losses
         for key, turn_on in task_switch.items():
             if turn_on:
                 if isinstance(loss_weights[key], dict):
@@ -329,13 +329,13 @@ class GeneralizedSEEM(nn.Module):
 
         
     def forward_seg(self, batched_inputs):
-        print()
-        print()
-        print("============ batched_inputs START=============")
-        print("batched_inputs", batched_inputs)
-        print("============ batched_inputs END=============")
-        print()
-        print()
+        # print()
+        # print()
+        # print("============ batched_inputs START=============")
+        # print("batched_inputs", batched_inputs)
+        # print("============ batched_inputs END=============")
+        # print()
+        # print()
         images = [x["image"].to(self.device) for x in batched_inputs]
         images = [(x - self.pixel_mean) / self.pixel_std for x in images]
         images = ImageList.from_tensors(images, self.size_divisibility)
@@ -388,15 +388,15 @@ class GeneralizedSEEM(nn.Module):
         else:
             losses = self.criterion.forward_vlp(outputs, targets, extra)
 
-        print()
-        print()
-        print("============outputs['pred_masks'] START=============")
         if batched_inputs[0]["grounding_info"][0]["sentences"][0]["sent"] == 'brain microbleeds in Brain MRI':
-            print("batched_inputs[0]['sent'] == 'brain microbleeds in Brain MRI")
-            distance_loss_func = Loss_Distance(batched_inputs)
+            # print("batched_inputs[0]['sent'] == 'brain microbleeds in Brain MRI")
+            distance_loss_func = Loss_Distance(batched_inputs, sigma_param=10.0)
             distance_loss = distance_loss_func.forward(outputs['pred_masks'])
-            print(distance_loss)
-            # sys.exit()
+            losses["loss_mask_distance_0"] = distance_loss
+        else:
+            zero_loss = (outputs['pred_masks'] * 0).sum()
+            losses["loss_mask_distance_0"] = zero_loss
+        
         # print(outputs['pred_masks'])
         # print(torch.unique(torch.sigmoid(outputs['pred_masks'])))
         # print(len(torch.unique(torch.sigmoid(outputs['pred_masks']))))

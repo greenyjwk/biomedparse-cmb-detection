@@ -18,7 +18,7 @@ from utilities.arguments import load_opt_command
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def init_wandb(args, job_dir, entity='jkim804-arizona-state-university', project='biomed_valdo_t2s_resampling_train', job_name='tmp'):
+def init_wandb(args, job_dir, entity='jkim804-arizona-state-university', project='biomed_valdo_t2s_resampling_distance_loss_train', job_name='tmp'):
 # def init_wandb(args, job_dir, entity='jkim804-arizona-state-university', project='TEMP', job_name='tmp'):
     wandb_dir = os.path.join(job_dir, 'wandb')
     os.makedirs(wandb_dir, exist_ok=True)
