@@ -229,8 +229,8 @@ ATTENTION_ARCH:
   SPATIAL_MEMORIES: 32
   QUERY_NUMBER: 3
 DATASETS:
-  # TRAIN: ['biomed_valdo_t2s_resampling_train']
-  TRAIN: ['biomed_loss_dev_train']
+  TRAIN: ['biomed_valdo_t2s_resampling_train']
+  # TRAIN: ['biomed_loss_dev_train']
   # TRAIN: ['biomed_valdo_biomedparse_cmbonly_t2s_win_norm_train']   # Add your registered training datasets here
   # TRAIN: ['biomed_valdo_biomedparse_cmbonly_allsequence_win_norm_train']   # Add your registered training datasets here
   # TRAIN: ['biomed_valdo_biomedparse_cmbonly_allsequence_modifiedPrompt_train']   # Add your registered training datasets here
@@ -244,8 +244,8 @@ DATASETS:
   # TRAIN: ['biomed_valdo_biomedparse_train']   # Add your registered training datasets here
   # TRAIN: ['biomed_BiomedParseData-Demo_demo']   # Add your registered training datasets here
 
-  # TEST: ['biomed_valdo_t2s_resampling_test']
-  TEST: ['biomed_loss_dev_test']
+  TEST: ['biomed_valdo_t2s_resampling_test']
+  # TEST: ['biomed_loss_dev_test']
   # TEST: ['biomed_valdo_biomedparse_cmbonly_t2s_win_norm_test']     # Add your registered test datasets here
   # TEST: ['biomed_valdo_biomedparse_cmbonly_allseq_gan_test']     # Add your registered test datasets here
   # TEST: ['biomed_valdo_biomedparse_cmbonly_t2sonly_gan_test']     # Add your registered test datasets here
