@@ -389,55 +389,7 @@ class GeneralizedSEEM(nn.Module):
         if self.task_switch['mask']:
             losses = self.criterion(outputs, targets, extra)
         else:
-            losses = self.criterion.forward_vlp(outputs, targets, extra)
-        distance_loss_func = Loss_Distance("/media/Datacenter_storage/Ji/BiomedParse", sigma_param=20.0)
-        # CMB Prediction Case
-        # if batched_inputs[0]["grounding_info"][0]["sentences"][0]["sent"] == 'brain microbleeds in Brain MRI':
-        print()
-        print()
-        # outputs['pred_masks] => (1,1101, 256,256) cmb will be trained to have larger values in the mask region
-        print("====================================START====================================")
-        print(batched_inputs)
-        B, Q, H, W = outputs['pred_masks'].shape
-        flat = outputs['pred_masks'].view(-1)
-        values, indices = torch.topk(flat, 50)
-        b, q, h, w = torch.unravel_index(indices, (B, Q, H, W))
-        print()
-        print("outputs[\"pred_masks\"].shape  ", outputs["pred_masks"].shape)
-        print("outputs[\"pred_logits\"]       ", outputs["pred_logits"])
-        print(values)
-        print(b)
-        print(q)
-        print(h)
-        print(w)
-        print("====================================END====================================")
-        print()
-        print()
-        if batched_inputs[0]["grounding_info"][0]["sentences"][0]["sent"] == 'brain microbleeds in Brain MRI':
-            # outputs['pred_masks] => (1,1101, 256,256) cmb will be trained to have larger values in the mask region
-            B, Q, H, W = outputs['pred_masks'].shape
-            flat = outputs['pred_masks'].view(-1)
-            values, indices = torch.topk(flat, 50)
-            b, q, h, w = torch.unravel_index(indices, (B, Q, H, W))
-            mask_file_path = batched_inputs[0]["grounding_info"][0]["mask_file"]
-            distance_loss = distance_loss_func.forward(outputs["pred_masks"], mask_file_path)
-            target_file = os.path.join("/media/Datacenter_storage/Ji/BiomedParse", "biomedparse_datasets/loss_dev/train/sub-207-slice-108_MRI_Brain.png")
-            if os.path.join("/media/Datacenter_storage/Ji/BiomedParse", batched_inputs[0]['file_name']) == target_file:
-                track_distance_loss_one_sample(distance_loss)
-            losses["loss_mask_distance_0"] = distance_loss
-        # CSF Prediction Case
-        else:
-            zero_loss = (outputs['pred_masks'] * 0).sum()
-            losses["loss_mask_distance_0"] = zero_loss
-                
-        # print(outputs['pred_masks'])
-        # print(torch.unique(torch.sigmoid(outputs['pred_masks'])))
-        # print(len(torch.unique(torch.sigmoid(outputs['pred_masks']))))
-        # print(torch.sigmoid(outputs['pred_masks']))
-        # print(outputs['pred_masks'].shape)
-        # print("============outputs['pred_masks'] END=============")
-        # print()
-        # print()
+            losses = self.criterion.forward_vlp(outputs, targets, extra)       
         
         del outputs
         return losses
