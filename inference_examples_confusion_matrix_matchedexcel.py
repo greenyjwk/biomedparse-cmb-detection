@@ -47,6 +47,8 @@ with torch.no_grad():
     model.model.sem_seg_head.predictor.lang_encoder.get_text_embeddings(BIOMED_CLASSES + ["background"], is_eval=True)
 
 
+
+
 def plot_segmentation_masks(segmentation_masks):
     combined_mask = np.zeros_like(segmentation_masks[0], dtype=np.uint8)
     for mask in segmentation_masks:
