@@ -99,7 +99,7 @@ class GeneralizedSEEM(nn.Module):
         self.overlap_threshold = overlap_threshold
         self.object_mask_threshold = object_mask_threshold
         self.metadata = metadata
-        self.distance_loss_regularizer_enabled = True
+        self.distance_loss_regularizer_enabled = False
         if size_divisibility < 0:
             # use backbone size_divisibility if not set
             size_divisibility = self.backbone.size_divisibility
@@ -429,16 +429,16 @@ class GeneralizedSEEM(nn.Module):
                 track_distance_loss_one_sample(distance_loss)
 
             losses["loss_mask_distance_0"] = distance_loss
-            if self.distance_loss_regularizer_enabled == True and distance_loss > 0.0:
-                losses["loss_mask_dice_0"] = losses["loss_mask_dice_0"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_1"] = losses["loss_mask_dice_1"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_2"] = losses["loss_mask_dice_2"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_3"] = losses["loss_mask_dice_3"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_4"] = losses["loss_mask_dice_4"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_5"] = losses["loss_mask_dice_5"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_6"] = losses["loss_mask_dice_6"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_7"] = losses["loss_mask_dice_7"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_8"] = losses["loss_mask_dice_8"] * (distance_loss + 1.0)
+            # if self.distance_loss_regularizer_enabled == True and distance_loss > 0.0:
+            #     losses["loss_mask_dice_0"] = losses["loss_mask_dice_0"] * (distance_loss + 1.0)
+            #     losses["loss_mask_dice_1"] = losses["loss_mask_dice_1"] * (distance_loss + 1.0)
+            #     losses["loss_mask_dice_2"] = losses["loss_mask_dice_2"] * (distance_loss + 1.0)
+            #     losses["loss_mask_dice_3"] = losses["loss_mask_dice_3"] * (distance_loss + 1.0)
+            #     losses["loss_mask_dice_4"] = losses["loss_mask_dice_4"] * (distance_loss + 1.0)
+            #     losses["loss_mask_dice_5"] = losses["loss_mask_dice_5"] * (distance_loss + 1.0)
+            #     losses["loss_mask_dice_6"] = losses["loss_mask_dice_6"] * (distance_loss + 1.0)
+            #     losses["loss_mask_dice_7"] = losses["loss_mask_dice_7"] * (distance_loss + 1.0)
+            #     losses["loss_mask_dice_8"] = losses["loss_mask_dice_8"] * (distance_loss + 1.0)
         # CSF Prediction Case
         else:
             zero_loss = (outputs['pred_masks'] * 0).sum()
