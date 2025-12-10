@@ -99,7 +99,7 @@ class GeneralizedSEEM(nn.Module):
         self.overlap_threshold = overlap_threshold
         self.object_mask_threshold = object_mask_threshold
         self.metadata = metadata
-        self.distance_loss_regularizer_enabled = True
+        self.distance_loss_regularizer_enabled = False
         if size_divisibility < 0:
             # use backbone size_divisibility if not set
             size_divisibility = self.backbone.size_divisibility
@@ -333,18 +333,20 @@ class GeneralizedSEEM(nn.Module):
 
         
     def forward_seg(self, batched_inputs):
-        # print()
-        # print()
-        # print("============ batched_inputs START=============")
-        # print("batched_inputs", batched_inputs)
-        # print("============ batched_inputs END=============")
-        # print()
-        # print()
         images = [x["image"].to(self.device) for x in batched_inputs]
         images = [(x - self.pixel_mean) / self.pixel_std for x in images]
         images = ImageList.from_tensors(images, self.size_divisibility)
         print("self.train_class_names", self.train_class_names)
         self.sem_seg_head.predictor.lang_encoder.get_text_embeddings(self.train_class_names, is_eval=False)
+
+        # opt = load_opt_from_config_files(["configs/biomedparse_inference.yaml"])
+        # opt = init_distributed(opt)
+        # pretrained_pth = "/media/Datacenter_storage/Ji/BiomedParse/output/biomed_seg_lang_v1.yaml_conf~/run_48/00025440/default/model_state_dict.pt"
+        # model = BaseModel(opt, build_model(opt)).from_pretrained(pretrained_pth).eval().cuda()
+
+        # model = self.sem_seg_head.predictor.lang_encoder.get_text_embeddings(BIOMED_CLASSES + ["background"], is_eval=True)        
+        # print("model", model)
+        # sys.exit()
 
         extra = {}
         # mask classification target
@@ -429,29 +431,21 @@ class GeneralizedSEEM(nn.Module):
                 track_distance_loss_one_sample(distance_loss)
 
             losses["loss_mask_distance_0"] = distance_loss
-            if self.distance_loss_regularizer_enabled == True and distance_loss > 0.0:
-                losses["loss_mask_dice_0"] = losses["loss_mask_dice_0"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_1"] = losses["loss_mask_dice_1"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_2"] = losses["loss_mask_dice_2"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_3"] = losses["loss_mask_dice_3"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_4"] = losses["loss_mask_dice_4"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_5"] = losses["loss_mask_dice_5"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_6"] = losses["loss_mask_dice_6"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_7"] = losses["loss_mask_dice_7"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_8"] = losses["loss_mask_dice_8"] * (distance_loss + 1.0)
+            # if self.distance_loss_regularizer_enabled == True and distance_loss > 0.0:
+            #     losses["loss_mask_dice_0"] = losses["loss_mask_dice_0"] * (distance_loss + 1.0)
+            #     losses["loss_mask_dice_1"] = losses["loss_mask_dice_1"] * (distance_loss + 1.0)
+            #     losses["loss_mask_dice_2"] = losses["loss_mask_dice_2"] * (distance_loss + 1.0)
+            #     losses["loss_mask_dice_3"] = losses["loss_mask_dice_3"] * (distance_loss + 1.0)
+            #     losses["loss_mask_dice_4"] = losses["loss_mask_dice_4"] * (distance_loss + 1.0)
+            #     losses["loss_mask_dice_5"] = losses["loss_mask_dice_5"] * (distance_loss + 1.0)
+            #     losses["loss_mask_dice_6"] = losses["loss_mask_dice_6"] * (distance_loss + 1.0)
+            #     losses["loss_mask_dice_7"] = losses["loss_mask_dice_7"] * (distance_loss + 1.0)
+            #     losses["loss_mask_dice_8"] = losses["loss_mask_dice_8"] * (distance_loss + 1.0)
+        
         # CSF Prediction Case
         else:
             zero_loss = (outputs['pred_masks'] * 0).sum()
             losses["loss_mask_distance_0"] = zero_loss
-                
-        # print(outputs['pred_masks'])
-        # print(torch.unique(torch.sigmoid(outputs['pred_masks'])))
-        # print(len(torch.unique(torch.sigmoid(outputs['pred_masks']))))
-        # print(torch.sigmoid(outputs['pred_masks']))
-        # print(outputs['pred_masks'].shape)
-        # print("============outputs['pred_masks'] END=============")
-        # print()
-        # print()
         
         del outputs
         return losses

@@ -26,7 +26,7 @@ SEGMENT_THRESHOLD = 0.5
 SMALL_FILTER = 1
 
 # Set GPU device
-os.environ['CUDA_VISIBLE_DEVICES'] = "1"
+os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 torch.cuda.set_device(0)
 
 # Load model
