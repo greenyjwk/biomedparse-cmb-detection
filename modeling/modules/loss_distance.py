@@ -54,7 +54,6 @@ class Loss_Distance(nn.Module):
         loss_distance = loss_map.sum() / torch.clamp((weight > 0).sum(), min=1.0)
         return loss_distance
 
-
 def clustering(loss_map):
     numpy_arr = loss_map.squeeze().detach().cpu().numpy()
     labeled, num = nd.label(numpy_arr)

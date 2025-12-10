@@ -26,7 +26,7 @@ SEGMENT_THRESHOLD = 0.5
 SMALL_FILTER = 1
 
 # Set GPU device
-os.environ['CUDA_VISIBLE_DEVICES'] = "3"
+os.environ['CUDA_VISIBLE_DEVICES'] = "1"
 torch.cuda.set_device(0)
 
 # Load model
@@ -36,7 +36,10 @@ opt = init_distributed(opt)
 
 # T2S Only from original dataset(No GAN, resampling train/val set, Distance Loss)
 # pretrained_pth = "/media/Datacenter_storage/Ji/BiomedParse/output/biomed_seg_lang_v1.yaml_conf~/run_48/00024168/default/model_state_dict.pt"
-pretrained_pth = "/media/Datacenter_storage/Ji/BiomedParse/output/biomed_seg_lang_v1.yaml_conf~/run_48/00025440/default/model_state_dict.pt"
+# pretrained_pth = "/media/Datacenter_storage/Ji/BiomedParse/output/biomed_seg_lang_v1.yaml_conf~/run_48/00025440/default/model_state_dict.pt"
+
+# T2S Only from original dataset(No GAN, resampling train/val set, Distance Loss as regularizer)
+pretrained_pth = "/media/Datacenter_storage/Ji/BiomedParse/output/biomed_seg_lang_v1.yaml_conf~/run_49/00015900/default/model_state_dict.pt"
 
 # T2S Only from original dataset with GAN augmentation with resampling
 # pretrained_pth = "/media/Datacenter_storage/Ji/BiomedParse/output/biomed_seg_lang_v1.yaml_conf~/run_43/00024080/default/model_state_dict.pt"
