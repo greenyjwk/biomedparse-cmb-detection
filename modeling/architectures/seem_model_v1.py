@@ -8,20 +8,26 @@ import sys
 import os
 import random
 import torch
+import copy
 import numpy as np
+import matplotlib.pyplot as plt
 from typing import Tuple
 from datetime import datetime
 from openpyxl import Workbook, load_workbook
 from torch import nn
 from torch.nn import functional as F
 from kornia.contrib import distance_transform
+from PIL import Image
 
+from inference_utils.processing_utils import read_rgb
+from inference_utils.inference import interactive_infer_image
+from modeling.BaseModel import BaseModel
 from detectron2.structures import Boxes, ImageList, Instances, BitMasks
 from detectron2.utils.memory import retry_if_cuda_oom
 from detectron2.data import MetadataCatalog
 from modeling.modules.loss_distance import Loss_Distance
 
-from .build import register_model
+from .build import register_model, build_model
 
 from ..utils import configurable, get_class_names, get_iou, Spatial_ImageList
 from ..vision.backbone import build_backbone, Backbone
@@ -31,8 +37,10 @@ from ..language import build_language_encoder
 from ..language.loss import vl_similarity
 from utilities.prompt_engineering import prompt_engineering
 from utilities.constants import COCO_PANOPTIC_CLASSES, BIOMED_CLASSES
+from utilities.arguments import load_opt_from_config_files
+from utilities.distributed import init_distributed
 
-
+SEGMENTATION_THRESHOLD = 0.5
 class GeneralizedSEEM(nn.Module):
 
     @configurable
@@ -338,15 +346,18 @@ class GeneralizedSEEM(nn.Module):
         images = ImageList.from_tensors(images, self.size_divisibility)
         print("self.train_class_names", self.train_class_names)
         self.sem_seg_head.predictor.lang_encoder.get_text_embeddings(self.train_class_names, is_eval=False)
-
-        # opt = load_opt_from_config_files(["configs/biomedparse_inference.yaml"])
-        # opt = init_distributed(opt)
-        # pretrained_pth = "/media/Datacenter_storage/Ji/BiomedParse/output/biomed_seg_lang_v1.yaml_conf~/run_48/00025440/default/model_state_dict.pt"
-        # model = BaseModel(opt, build_model(opt)).from_pretrained(pretrained_pth).eval().cuda()
-
-        # model = self.sem_seg_head.predictor.lang_encoder.get_text_embeddings(BIOMED_CLASSES + ["background"], is_eval=True)        
-        # print("model", model)
-        # sys.exit()
+        
+        # For CSF segmentation prediction mask
+        opt = load_opt_from_config_files(["configs/biomedparse_inference.yaml"])
+        opt = init_distributed(opt)
+        csf_model = BaseModel(opt, build_model(opt))
+        csf_model.model = self
+        import copy
+        csf_model = copy.deepcopy(self)
+        csf_model.eval()
+        text_prompts = ['cerebrospinal fluid']
+        csf_pred = inference_rgb(batched_inputs[0]['file_name'], text_prompts, csf_model)
+        print(csf_pred)
 
         extra = {}
         # mask classification target
@@ -395,28 +406,6 @@ class GeneralizedSEEM(nn.Module):
             losses = self.criterion.forward_vlp(outputs, targets, extra)
         distance_loss_func = Loss_Distance("/media/Datacenter_storage/Ji/BiomedParse", sigma_param=20.0)
         
-        # CMB Prediction Case
-        # # if batched_inputs[0]["grounding_info"][0]["sentences"][0]["sent"] == 'brain microbleeds in Brain MRI':
-        # print()
-        # print()
-        # # outputs['pred_masks] => (1,1101, 256,256) cmb will be trained to have larger values in the mask region
-        # print("====================================START====================================")
-        # print(batched_inputs)
-        # B, Q, H, W = outputs['pred_masks'].shape
-        # flat = outputs['pred_masks'].view(-1)
-        # values, indices = torch.topk(flat, 50)
-        # b, q, h, w = torch.unravel_index(indices, (B, Q, H, W))
-        # print()
-        # print("outputs[\"pred_masks\"].shape  ", outputs["pred_masks"].shape)
-        # print("outputs[\"pred_logits\"]       ", outputs["pred_logits"])
-        # print(values)
-        # print(b)
-        # print(q)
-        # print(h)
-        # print(w)
-        # print("====================================END====================================")
-        # print()
-        # print()
         if batched_inputs[0]["grounding_info"][0]["sentences"][0]["sent"] == 'brain microbleeds in Brain MRI':
             # outputs['pred_masks] => (1,1101, 256,256) cmb will be trained to have larger values in the mask region
             B, Q, H, W = outputs['pred_masks'].shape
@@ -424,6 +413,11 @@ class GeneralizedSEEM(nn.Module):
             values, indices = torch.topk(flat, 50)
             b, q, h, w = torch.unravel_index(indices, (B, Q, H, W))
             mask_file_path = batched_inputs[0]["grounding_info"][0]["mask_file"]
+
+            # text_prompts = ['cerebrospinal fluid']
+            # csf_pred = inference_rgb(batched_inputs[0]['file_name'], text_prompts, model)
+            # print(csf_pred)
+
             distance_loss = distance_loss_func.forward(outputs["pred_masks"], mask_file_path)
             
             target_file = os.path.join("/media/Datacenter_storage/Ji/BiomedParse", "biomedparse_datasets/valdo_t2s_resampling/train/sub-309-slice-016_MRI_Brain.png")
@@ -979,6 +973,54 @@ class GeneralizedSEEM(nn.Module):
 
         return processed_results
 
+    
+    def evaluate_demo(self, batched_inputs):
+        assert len(batched_inputs) == 1, "only support batch size equal to 1"
+        images = [x["image"].to(self.device) for x in batched_inputs]
+        images = [(x - self.pixel_mean) / self.pixel_std for x in images]
+        images = ImageList.from_tensors(images, self.size_divisibility)
+        img_bs = images.tensor.shape[0]
+
+        targets = targets_grounding = queries_grounding = None
+        features = self.backbone(images.tensor)
+        mask_features, transformer_encoder_features, multi_scale_features = self.sem_seg_head.pixel_decoder.forward_features(features)
+        image_sizes = [x["image"].shape[-2:] for x in batched_inputs]
+
+        extra = {}
+        if 'stroke' in batched_inputs[0]:
+            pos_masks = (batched_inputs[0]['stroke'].to(self.device)).unbind(0)
+            pos_masks = ImageList.from_tensors(pos_masks, self.size_divisibility).tensor.unbind(0)
+            neg_masks = (batched_inputs[0]['stroke'].to(self.device) & False).unbind(0)
+            neg_masks = ImageList.from_tensors(neg_masks, self.size_divisibility).tensor.unbind(0)
+            extra.update({'spatial_query_pos_mask': pos_masks, 'spatial_query_neg_mask': neg_masks})
+
+        if 'visual' in batched_inputs[0]:
+            extra.update(batched_inputs[0]['visual'])
+        
+        if 'text' in batched_inputs[0]:
+            gtext = self.sem_seg_head.predictor.lang_encoder.get_text_token_embeddings(batched_inputs[0]['text'], name='grounding', token=False, norm=False)
+            token_emb = gtext['token_emb']
+            tokens = gtext['tokens']
+            query_emb = token_emb[tokens['attention_mask'].bool()]
+            non_zero_query_mask = torch.zeros(query_emb[:,None].shape[:-1], dtype=torch.bool, device=query_emb.device)
+            extra['grounding_tokens'] = query_emb[:,None]
+            extra['grounding_nonzero_mask'] = non_zero_query_mask.t()
+            extra['grounding_class'] = gtext['class_emb']
+
+        if 'audio' in batched_inputs[0]:
+            gtext = self.sem_seg_head.predictor.lang_encoder.get_text_token_embeddings(batched_inputs[0]['audio'], name='grounding', token=False, norm=False)
+            token_emb = gtext['token_emb']
+            tokens = gtext['tokens']
+            query_emb = token_emb[tokens['attention_mask'].bool()]
+            non_zero_query_mask = torch.zeros(query_emb[:,None].shape[:-1], dtype=torch.bool, device=query_emb.device)
+            extra['audio_tokens'] = query_emb[:,None]
+            extra['audio_nonzero_mask'] = non_zero_query_mask.t()
+            extra['audio_class'] = gtext['class_emb']
+        
+        outputs = self.sem_seg_head.predictor(multi_scale_features, mask_features, target_queries=queries_grounding, extra=extra, task='demo')
+        return outputs, images.tensor.shape, extra
+
+
     def prepare_targets(self, batched_inputs, images):
         h_pad, w_pad = images.tensor.shape[-2:]
         new_targets = []
@@ -1240,6 +1282,41 @@ class GeneralizedSEEM(nn.Module):
 
         return new_targets, new_queries
 
+def plot_segmentation_masks(original_image, segmentation_masks, texts):
+    ''' Plot a list of segmentation mask over an image.
+    '''
+    original_image = original_image[:, :, :3]
+    fig, ax = plt.subplots(1, len(segmentation_masks) + 1, figsize=(10, 5))
+    ax[0].imshow(original_image, cmap='gray')
+    # ax[0].set_title('Original Image')
+    # grid off
+    for a in ax:
+        a.axis('off')
+
+    # print("segmentation_masks", segmentation_masks)
+    # print("segmentation_masks.shape", segmentation_masks.shape)
+
+    for i, mask in enumerate(segmentation_masks):
+        print(i)
+        # ax[i+1].set_title(texts[i])
+        mask_temp = original_image.copy()
+        # mask_temp[mask >= SEGMENTATION_THRESHOLD] = [255, 0, 0]
+        mask_temp[mask >= SEGMENTATION_THRESHOLD] = [255, 255, 255]
+        mask_temp[mask < SEGMENTATION_THRESHOLD] = [0, 0, 0, ]
+        ax[i+1].imshow(mask_temp, alpha=1.0)
+        ax[i+1].imshow(original_image, cmap='gray', alpha=0.5)
+
+    plt.show()
+
+def inference_rgb(file_path, text_prompts, model):
+    image = read_rgb(file_path)
+    
+    pred_mask = interactive_infer_image(model, Image.fromarray(image), text_prompts)
+    
+    # Plot feature over image
+    plot_segmentation_masks(image, pred_mask, text_prompts)
+    
+    return image, pred_mask
 
 def track_distance_loss_one_sample(distance_loss):
     now_str = datetime.now().strftime("%Y%m%d%H%M")
