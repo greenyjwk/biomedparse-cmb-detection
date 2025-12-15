@@ -391,7 +391,7 @@ class GeneralizedSEEM(nn.Module):
             losses = self.criterion(outputs, targets, extra)
         else:
             losses = self.criterion.forward_vlp(outputs, targets, extra)
-        distance_loss_func = Loss_Distance("/media/Datacenter_storage/Ji/BiomedParse", sigma_param=20.0)
+        distance_loss_func = Loss_Distance("/media/Datacenter_storage/Ji/BiomedParse", sigma_param=1)
         
         # CMB Prediction Case
         # # if batched_inputs[0]["grounding_info"][0]["sentences"][0]["sent"] == 'brain microbleeds in Brain MRI':
@@ -430,16 +430,16 @@ class GeneralizedSEEM(nn.Module):
 
             losses["loss_mask_distance_0"] = distance_loss
             if self.distance_loss_regularizer_enabled == True and distance_loss > 0.0:
-                losses["loss_mask_dice_0"] = losses["loss_mask_dice_0"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_1"] = losses["loss_mask_dice_1"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_2"] = losses["loss_mask_dice_2"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_3"] = losses["loss_mask_dice_3"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_4"] = losses["loss_mask_dice_4"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_5"] = losses["loss_mask_dice_5"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_6"] = losses["loss_mask_dice_6"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_7"] = losses["loss_mask_dice_7"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_8"] = losses["loss_mask_dice_8"] * (distance_loss + 1.0)
-                losses["loss_mask_dice_9"] = losses["loss_mask_dice_9"] * (distance_loss + 1.0)
+                losses["loss_mask_dice_0"] = losses["loss_mask_dice_0"] * (distance_loss)
+                losses["loss_mask_dice_1"] = losses["loss_mask_dice_1"] * (distance_loss)
+                losses["loss_mask_dice_2"] = losses["loss_mask_dice_2"] * (distance_loss)
+                losses["loss_mask_dice_3"] = losses["loss_mask_dice_3"] * (distance_loss)
+                losses["loss_mask_dice_4"] = losses["loss_mask_dice_4"] * (distance_loss)
+                losses["loss_mask_dice_5"] = losses["loss_mask_dice_5"] * (distance_loss)
+                losses["loss_mask_dice_6"] = losses["loss_mask_dice_6"] * (distance_loss)
+                losses["loss_mask_dice_7"] = losses["loss_mask_dice_7"] * (distance_loss)
+                losses["loss_mask_dice_8"] = losses["loss_mask_dice_8"] * (distance_loss)
+                losses["loss_mask_dice_9"] = losses["loss_mask_dice_9"] * (distance_loss)
         # CSF Prediction Case
         else:
             zero_loss = (outputs['pred_masks'] * 0).sum()
@@ -453,7 +453,7 @@ class GeneralizedSEEM(nn.Module):
         # print("============outputs['pred_masks'] END=============")
         # print()
         # print()
-        
+
         del outputs
         return losses
 
